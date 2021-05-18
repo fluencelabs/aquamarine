@@ -11,7 +11,7 @@ name = "avm_server"
 path = "src/lib.rs"
 
 [dependencies]
-fluence-faas = "0.7.0"
+fluence-faas = { git = "https://github.com/fluencelabs/marine", branch = "memory_leak_test_3" }
 air-interpreter-interface = { version = "0.5.0", path = "../../crates/interpreter-interface" }
 
 thiserror = "1.0.24"
