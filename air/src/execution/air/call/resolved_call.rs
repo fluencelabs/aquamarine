@@ -42,6 +42,31 @@ pub(super) struct ResolvedCall<'i> {
     output: CallOutputValue<'i>,
 }
 
+fn jvalue_size(jvalue: &JValue) -> usize {
+    match jvalue {
+        JValue::Array(array) => {
+            let mut array_size = std::mem::size_of_val(&array);
+            for value in array.iter() {
+                array_size += jvalue_size(value);
+            }
+
+            array_size
+        }
+        JValue::Object(obj) => {
+            let mut obj_size = std::mem::size_of_val(&obj);
+            for value in obj.values() {
+                obj_size += jvalue_size(value);
+            }
+
+            obj_size
+        }
+        JValue::Bool(b) => std::mem::size_of_val(&b),
+        JValue::Number(n) => std::mem::size_of_val(&n),
+        JValue::Null => return 1,
+        JValue::String(str) => str.as_bytes().len(),
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 struct ResolvedArguments {
     call_arguments: String,
@@ -107,11 +132,14 @@ impl<'i> ResolvedCall<'i> {
         // check that service call succeeded
         let service_result = handle_service_error(service_result, trace_ctx)?;
 
-        println!("air: before serde_json::from_str, result len is {}", service_result.result.as_bytes().len());
+        println!(
+            "air: before serde_json::from_str, result len is {}",
+            service_result.result.as_bytes().len()
+        );
 
         let result: JValue = serde_json::from_str(&service_result.result).map_err(|e| DeError(service_result, e))?;
 
-        println!("air: after serde_json::from_str 0");
+        println!("air: after serde_json::from_str, size: {}", jvalue_size(&result));
 
         let result = Rc::new(result);
 
