@@ -91,6 +91,8 @@ impl<'i> ResolvedCall<'i> {
 
         let serialized_tetraplets = serde_json::to_string(&tetraplets).expect("default serializer shouldn't fail");
 
+        println!("air: before call service");
+
         let service_result = unsafe {
             crate::build_targets::call_service(
                 &self.triplet.service_id,
@@ -100,14 +102,28 @@ impl<'i> ResolvedCall<'i> {
             )
         };
 
+        println!("air: after call service");
+
         // check that service call succeeded
         let service_result = handle_service_error(service_result, trace_ctx)?;
 
+        println!("air: before serde_json::from_str, result len is {}", service_result.result.as_bytes().len());
+
         let result: JValue = serde_json::from_str(&service_result.result).map_err(|e| DeError(service_result, e))?;
+
+        println!("air: after serde_json::from_str 0");
+
         let result = Rc::new(result);
 
+        println!("air: after serde_json::from_str 1");
+
         set_local_call_result(result.clone(), self.triplet.clone(), &self.output, exec_ctx)?;
+
+        println!("air: after serde_json::from_str 2");
+
         let new_executed_state = Call(Executed(result));
+
+        println!("air: after serde_json::from_str 3");
 
         log::trace!(
             target: EXECUTED_STATE_CHANGING,
@@ -115,7 +131,11 @@ impl<'i> ResolvedCall<'i> {
             new_executed_state
         );
 
+        println!("air: after serde_json::from_str 4");
+
         trace_ctx.new_trace.push_back(new_executed_state);
+
+        println!("air: after serde_json::from_str 5");
 
         Ok(())
     }
