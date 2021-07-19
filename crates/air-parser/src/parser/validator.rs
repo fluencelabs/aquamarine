@@ -71,9 +71,14 @@ impl<'i> VariableValidator<'i> {
         self.met_matchable(&mismatch.right_value, span);
     }
 
-    pub(super) fn met_fold(&mut self, fold: &Fold<'i>, span: Span) {
+    pub(super) fn met_fold_scalar(&mut self, fold: &FoldScalar<'i>, span: Span) {
         self.met_iterable_value(&fold.iterable, span);
-        self.met_iterator_definition(&fold.iterator, span);
+        self.met_iterator_definition(fold.iterator, span);
+    }
+
+    pub(super) fn met_fold_stream(&mut self, fold: &FoldStream<'i>, span: Span) {
+        self.met_variable(&Variable::Stream(fold.stream_name), span);
+        self.met_iterator_definition(fold.iterator, span);
     }
 
     pub(super) fn met_next(&mut self, next: &Next<'i>, span: Span) {
@@ -218,10 +223,14 @@ impl<'i> VariableValidator<'i> {
             .any(|s| s.left < key_span.left && s.right > key_span.right)
     }
 
-    fn met_iterable_value(&mut self, iterable_value: &IterableValue<'i>, span: Span) {
+    fn met_iterable_value(&mut self, iterable_value: &IterableScalarValue<'i>, span: Span) {
         match iterable_value {
-            IterableValue::JsonPath { variable, .. } => self.met_variable(variable, span),
-            IterableValue::Variable(variable) => self.met_variable(variable, span),
+            IterableScalarValue::JsonPath { scalar_name, .. } => {
+                self.met_variable(&Variable::Scalar(scalar_name), span)
+            }
+            IterableScalarValue::ScalarVariable(variable) => {
+                self.met_variable(&Variable::Scalar(variable), span)
+            }
         }
     }
 

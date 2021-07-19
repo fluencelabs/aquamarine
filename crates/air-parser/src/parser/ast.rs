@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
+mod fold_id;
 mod traits;
 
 pub use crate::parser::lexer::LastErrorPath;
 pub use crate::parser::lexer::Number;
 pub use crate::parser::lexer::Variable;
+pub(super) use fold_id::create_fold_id;
 
 use serde::Deserialize;
 use serde::Serialize;
@@ -35,7 +37,8 @@ pub enum Instruction<'i> {
     Xor(Xor<'i>),
     Match(Match<'i>),
     MisMatch(MisMatch<'i>),
-    Fold(Fold<'i>),
+    FoldScalar(FoldScalar<'i>),
+    FoldStream(FoldStream<'i>),
     Next(Next<'i>),
     Error,
 }
@@ -88,10 +91,10 @@ pub enum CallInstrArgValue<'i> {
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub enum IterableValue<'i> {
-    Variable(Variable<'i>),
+pub enum IterableScalarValue<'i> {
+    ScalarVariable(&'i str),
     JsonPath {
-        variable: Variable<'i>,
+        scalar_name: &'i str,
         path: &'i str,
         should_flatten: bool,
     },
@@ -141,8 +144,17 @@ pub struct MisMatch<'i> {
 }
 
 #[derive(Serialize, Debug, PartialEq)]
-pub struct Fold<'i> {
-    pub iterable: IterableValue<'i>,
+pub struct FoldScalar<'i> {
+    pub iterable: IterableScalarValue<'i>,
+    pub iterator: &'i str,
+    pub instruction: Rc<Instruction<'i>>,
+}
+
+#[derive(Serialize, Debug, PartialEq)]
+pub struct FoldStream<'i> {
+    pub stream_name: &'i str,
+    // this identifier used to differentiate between fold FSM in trace handler
+    pub id: Rc<String>,
     pub iterator: &'i str,
     pub instruction: Rc<Instruction<'i>>,
 }
